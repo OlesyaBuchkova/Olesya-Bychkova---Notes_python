@@ -1,43 +1,79 @@
-from csv import DictReader, DictWriter
-from distutils.file_util import write_file
-from os.path import exists
+import json
+from csv import DictReader
+from datetime import datetime
 
 from numpy.distutils.misc_util import get_info
+file_name = 'notes.json'
 
 
-def create_file(file_name):
-    with open(file_name, "w", encoding='utf-8') as data:
-        f_writer = DictWriter(data)
-        f_writer.writeheader()
+def create_file(): #Создание файла, если его нет
+    with open(file_name, "w", encoding='utf-8') as file:
+        json.dump([], file)
+
+def save_notes(notes): #сохранение заметки
+    with open(file_name, "w") as file:
+        json.dump(notes, file, indent=4)
 
 
-def read_file(file_name):
-    with open(file_name, "r", encoding='utf-8') as data:
-        f_reader = DictReader(data)
-        return list(f_reader)
+def create_note(notes, title, message): #Создание новой заметки
+    note_id = len(notes) + 1
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    note = {"id": note_id, "title": title, "message": message, "timestamp": timestamp}
+    notes.append(note)
+    return notes
 
 
 
-
-
-file_name = 'notes.csv'
 
 
 def main():
+    notes = load_notes()
+    info = ('Вам доступны следующие команды: \n'
+            'info - показывает актуальные команды\n'
+            'add - добавление заметки в файл\n'
+            'read - чтение заметки\n'
+            'delete - удаляет заметку с выбранным ID\n'
+            'edit - можно внести изменения в заметку\n'
+            'date - показывает заметки созданные, в указанных датах\n'
+            'all - показывает все заметки\n'
+            'exit - выход из программы')
+
     while True:
-        command = input("Введите команду: ")
-        if command == 'q':
+        command = input("Введите команду: info, add, read, delete, edit, data, all, exit): ")
+
+        if command == "add":
+            title = input("Введите заголовок заметки: ")
+            message = input("Введите текст заметки: ")
+            notes = create_file(notes, title, message)
+            save_notes(notes)
+            print("Заметка успешно сохранена.")
+        elif command == "read":
+            for note in notes:
+                print(f"ID: {note['id']}, Заголовок: {note['title']}, Время создания: {note['timestamp']}")
+        elif command == "edit":
+            note_id = int(input("Введите ID заметки для редактирования: "))
+            new_title = input("Введите новый заголовок заметки: ")
+            new_message = input("Введите новый текст заметки: ")
+            notes = edit_note(notes, note_id, new_title, new_message)
+            save_notes(notes)
+            print("Заметка успешно отредактирована.")
+        elif command == "delete":
+            note_id = int(input("Введите ID заметки для удаления: "))
+            notes = delete_note(notes, note_id)
+            save_notes(notes)
+            print("Заметка успешно удалена.")
+        elif command == "all":
+            note_id = int(input("Введите ID заметки для просмотра: "))
+            show_note(notes, note_id)
+        elif command == "date":
+            show_date(notes)
+        elif command == "info":
+            print(info)
+        elif command == "exit":
             break
-        elif command == 'w':
-            if not exists(file_name):
-                create_file(file_name)
-            write_file(file_name, get_info())
-        elif command == 'r':
-            if not exists(file_name):
-                print("Файл отсутствует. Создайте его")
-                continue
-            print(*read_file(file_name))
+
+        else:
+            print("Невозможно выполнить команду, для просомтра всех доступных коман введите info")
 
 
 
-main()
